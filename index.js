@@ -1,5 +1,8 @@
-const inquirer = require("inquirer@8.2.4");
+const inquirer = require("inquirer");
 const fs = require("fs");
+const express = require("express");
+
+const app = express();
 
 const questions = [
   {
@@ -16,7 +19,10 @@ const questions = [
       "Add Department",
     ],
   },
-  {},
 ];
 
-function init() {}
+function init() {
+  inquirer.prompt(questions);
+}
+
+init();
