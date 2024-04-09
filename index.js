@@ -55,6 +55,9 @@ function init() {
     if (prompt.choices == "Add Role") {
       addRole();
     }
+    if (prompt.choices == "Update Employee Role") {
+      updateEmployeeRole();
+    }
   });
 }
 
@@ -183,4 +186,66 @@ async function addDepartment() {
     console.log(error);
   }
 }
+
+async function updateEmployeeRole() {
+  try {
+    const employees = await pool.query(
+      "SELECT id as value,concat (first_name, ' ', last_name) as name FROM employees"
+    );
+    const roles = await pool.query("SELECT id as value FROM roles");
+    const prompt = await inquirer.prompt([
+      {
+        type: "list",
+        message: "Which employee would you like to update?",
+        choices: employees.rows,
+        name: "employee role",
+      },
+      {
+        type: "list",
+        message: "Which role do you want to assign to this employee?",
+        choices: roles.rows,
+        name: "role choice",
+      },
+    ]);
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 init();
+
+// const { Pool } = require('pg');
+// const readline = require('readline');
+
+// // Create a connection pool to the database
+// const pool = new Pool({
+//   user: 'yourusername',
+//   host: 'localhost',
+//   database: 'yourdatabase',
+//   password: 'yourpassword',
+//   port: 5432,
+// });
+
+// // Get user input
+// const rl = readline.createInterface({
+//   input: process.stdin,
+//   output: process.stdout
+// });
+
+// rl.question('Enter name: ', (name) => {
+//   rl.question('Enter age: ', (age) => {
+//     // SQL insert statement with user input
+//     const sql = 'INSERT INTO students (name, age) VALUES ($1, $2)';
+//     const values = [name, age];
+
+//     // Execute the insert statement
+//     pool.query(sql, values, (error, results) => {
+//       if (error) throw error;
+//       console.log('Number of records inserted:', results.rowCount);
+
+//       // Close the connection pool
+//       pool.end();
+//       rl.close();
+//     });
+//   });
+// });
