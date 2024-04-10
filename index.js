@@ -1,5 +1,7 @@
 const inquirer = require("inquirer");
 const { Pool } = require("pg");
+const { Client } = require('pg');
+
 
 const pool = new Pool(
   {
@@ -12,6 +14,7 @@ const pool = new Pool(
 );
 
 pool.connect();
+client.connect();
 
 const questions = [
   {
@@ -70,7 +73,6 @@ function viewAllDepartments() {
       console.log({ error: err.message });
       return;
     }
-
     console.table(rows);
   });
 }
@@ -132,15 +134,27 @@ async function addEmployee() {
         choices: managers.rows,
         name: "manager",
       },
-    ]);
+    ]).then((answers) => {
+      const query = "INSERT INTO employees,concat (first_name, ' ', last_name), as name from employees";
+      const values = [answers.first_name, answers.last_name, answers.role, answers.manager];
+      client.query(query, values, (err, res) => {
+        if (err) {
+          console.error(err);
+        } else {
+          console.log('Data inserted successfully!');
+        }
+    
+      
+        client.end();
+      })
 
     console.log(prompt);
     console.table(roles.rows);
     console.table(managers.rows);
-  } catch (error) {
-    console.log(error);
-  }
-}
+  // } catch (error) {
+  //   console.log(error);
+  // };
+};
 
 async function addRole() {
   try {
@@ -192,7 +206,9 @@ async function updateEmployeeRole() {
     const employees = await pool.query(
       "SELECT id as value,concat (first_name, ' ', last_name) as name FROM employees"
     );
-    const roles = await pool.query("SELECT id as value FROM roles");
+    const roles = await pool.query(
+      "SELECT id as value, title as name FROM role"
+    );
     const prompt = await inquirer.prompt([
       {
         type: "list",
@@ -214,38 +230,56 @@ async function updateEmployeeRole() {
 
 init();
 
-// const { Pool } = require('pg');
-// const readline = require('readline');
 
-// // Create a connection pool to the database
-// const pool = new Pool({
-//   user: 'yourusername',
+
+
+
+
+
+
+
+
+
+// const { Client } = require('pg');
+// const inquirer = require('inquirer');
+
+// // Create a new PostgreSQL client
+// const client = new Client({
+//   user: 'your_username',
 //   host: 'localhost',
-//   database: 'yourdatabase',
-//   password: 'yourpassword',
+//   database: 'your_database',
+//   password: 'your_password',
 //   port: 5432,
 // });
 
-// // Get user input
-// const rl = readline.createInterface({
-//   input: process.stdin,
-//   output: process.stdout
-// });
+// // Connect to the database
+// client.connect();
 
-// rl.question('Enter name: ', (name) => {
-//   rl.question('Enter age: ', (age) => {
-//     // SQL insert statement with user input
-//     const sql = 'INSERT INTO students (name, age) VALUES ($1, $2)';
-//     const values = [name, age];
+// Prompt the user for input using Inquirer
+inquirer.prompt([
+  {
+    type: 'input',
+    name: 'name',
+    message: 'Enter your name:',
+  },
+  {
+    type: 'input',
+    name: 'email',
+    message: 'Enter your email:',
+  },
+]).then((answers) => {
+  // Insert the collected data into the database
+  const query = 'INSERT INTO users (name, email) VALUES ($1, $2)';
+  const values = [answers.name, answers.email];
 
-//     // Execute the insert statement
-//     pool.query(sql, values, (error, results) => {
-//       if (error) throw error;
-//       console.log('Number of records inserted:', results.rowCount);
+  client.query(query, values, (err, res) => {
+    if (err) {
+      console.error(err);
+    } else {
+      console.log('Data inserted successfully!');
+    }
 
-//       // Close the connection pool
-//       pool.end();
-//       rl.close();
-//     });
-//   });
-// });
+    // Close the database connection
+    client.end();
+  });
+});
