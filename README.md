@@ -1,9 +1,11 @@
 # SQL-employee-tracker
 
 # Description
-In this project we were tasked with creating an employee tracer system.  The focus of this assignment was to use databases and connect tables. 
+In this project we were tasked with creating an employee tracer system.  The focus of this assignment was to use databases and connect tables. We learned about primary keys and foreign keys 
 
 # Usage
+https://drive.google.com/file/d/1Pe75MINx1pSelievFDdh1hwcyx9JC3qu/view
+
 
 # Installation
 

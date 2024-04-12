@@ -1,7 +1,5 @@
 const inquirer = require("inquirer");
 const { Pool } = require("pg");
-const { Client } = require('pg');
-
 
 const pool = new Pool(
   {
@@ -14,7 +12,6 @@ const pool = new Pool(
 );
 
 pool.connect();
-client.connect();
 
 const questions = [
   {
@@ -66,20 +63,21 @@ function init() {
 
 function viewAllDepartments() {
   console.log("viewAllDepartments");
-  const sql = `SELECT * FROM department`;
+  const sql = `SELECT id, name FROM department`;
 
   pool.query(sql, (err, { rows }) => {
     if (err) {
       console.log({ error: err.message });
       return;
     }
+
     console.table(rows);
   });
 }
 
 function viewAllRoles() {
   console.log("viewAllRoles");
-  const sql = `SELECT * FROM role`;
+  const sql = `SELECT id, title, salary, department_id FROM role`;
 
   pool.query(sql, (err, { rows }) => {
     if (err) {
@@ -92,7 +90,7 @@ function viewAllRoles() {
 
 function viewAllEmployees() {
   console.log("viewAllEmployees");
-  const sql = `SELECT * FROM employees`;
+  const sql = `SELECT * FROM employees e1, role WHERE e1.role_id = role.id`;
 
   pool.query(sql, (err, { rows }) => {
     if (err) {
@@ -111,74 +109,106 @@ async function addEmployee() {
     const managers = await pool.query(
       "SELECT id as value,concat (first_name, ' ', last_name) as name FROM employees WHERE manager_id is null"
     );
-    const prompt = await inquirer.prompt([
-      {
-        type: "input",
-        message: "What is the employees first name?",
-        name: "first_name",
-      },
-      {
-        type: "input",
-        message: "What is the employees last name?",
-        name: "last_name",
-      },
-      {
-        type: "list",
-        message: "what is the employee role?",
-        choices: roles.rows,
-        name: "role",
-      },
-      {
-        type: "list",
-        message: "Who is the manager for this employee?",
-        choices: managers.rows,
-        name: "manager",
-      },
-    ]).then((answers) => {
-      const query = "INSERT INTO employees,concat (first_name, ' ', last_name), as name from employees";
-      const values = [answers.first_name, answers.last_name, answers.role, answers.manager];
-      client.query(query, values, (err, res) => {
-        if (err) {
-          console.error(err);
-        } else {
-          console.log('Data inserted successfully!');
-        }
-    
-      
-        client.end();
-      })
+    const prompt = await inquirer
+      .prompt([
+        {
+          type: "input",
+          message: "What is the employees first name?",
+          name: "first_name",
+        },
+        {
+          type: "input",
+          message: "What is the employees last name?",
+          name: "last_name",
+        },
+        {
+          type: "list",
+          message: "what is the employee role?",
+          choices: roles.rows,
+          name: "role",
+        },
+        {
+          type: "list",
+          message: "Who is the manager for this employee?",
+          choices: managers.rows,
+          name: "manager",
+        },
+      ])
+      .then((answers) => {
+        // Insert the collected data into the database
+        const roleID = 1;
+        const managerID = 1;
+        const query =
+          "INSERT INTO employees (first_name, last_name, role_id, manager_id) VALUES ($1, $2, $3, $4)";
+        const values = [
+          answers.first_name,
+          answers.last_name,
+          roleID,
+          managerID,
+        ];
+
+        pool.query(query, values, (err, res) => {
+          if (err) {
+            console.error(err);
+          } else {
+            console.log("Data inserted successfully!");
+          }
+
+          // Close the database connection
+          pool.end();
+        });
+      });
 
     console.log(prompt);
-    console.table(roles.rows);
-    console.table(managers.rows);
-  // } catch (error) {
-  //   console.log(error);
-  // };
-};
+    // console.table(roles.rows);
+    // console.table(managers.rows);
+  } catch (error) {
+    console.log(error);
+  }
+}
 
 async function addRole() {
   try {
     const departments = await pool.query(
       "SELECT department as name FROM department"
     );
-    const prompt = await inquirer.prompt([
-      {
-        type: "input",
-        message: "What is the name of the new role?",
-        name: "new role",
-      },
-      {
-        type: "input",
-        message: "What is the salary for this role?",
-        name: "salary",
-      },
-      {
-        type: "list",
-        message: "Which department does this role belong to?",
-        choices: departments.rows,
-        name: "role department",
-      },
-    ]);
+    const prompt = await inquirer
+      .prompt([
+        {
+          type: "input",
+          message: "What is the name of the new role?",
+          name: "new_role",
+        },
+        {
+          type: "input",
+          message: "What is the salary for this role?",
+          name: "salary",
+        },
+        {
+          type: "list",
+          message: "Which department does this role belong to?",
+          choices: departments.rows,
+          name: "role_department",
+        },
+      ])
+      .then((answers) => {
+        // Insert the collected data into the database
+        const departmentID = 1;
+        const query =
+          "INSERT INTO role (title, salary, department_id) VALUES ($1, $2, $3)";
+        const values = [answers.new_role, answers.salary, departmentID];
+
+        pool.query(query, values, (err, res) => {
+          if (err) {
+            console.error(err);
+          } else {
+            console.log("Data inserted successfully!");
+          }
+
+          // Close the database connection
+          pool.end();
+        });
+      });
     console.log(prompt);
     console.table(departments.rows);
   } catch (error) {
@@ -188,13 +218,30 @@ async function addRole() {
 
 async function addDepartment() {
   try {
-    const prompt = await inquirer.prompt([
-      {
-        type: "input",
-        message: "What is the name of the new department?",
-        name: "new department",
-      },
-    ]);
+    const prompt = await inquirer
+      .prompt([
+        {
+          type: "input",
+          message: "What is the name of the new department?",
+          name: "new_department",
+        },
+      ])
+      .then((answers) => {
+        // Insert the collected data into the database
+        const query = "INSERT INTO department (name) VALUES ($1)";
+        const values = [answers.new_department];
+
+        pool.query(query, values, (err, res) => {
+          if (err) {
+            console.error(err);
+          } else {
+            console.log("Data inserted successfully!");
+          }
+
+          // Close the database connection
+          pool.end();
+        });
+      });
     console.log(prompt);
   } catch (error) {
     console.log(error);
@@ -223,63 +270,10 @@ async function updateEmployeeRole() {
         name: "role choice",
       },
     ]);
+  
   } catch (error) {
     console.log(error);
   }
 }
 
 init();
-
-
-
-
-
-
-
-
-
-
-
-// const { Client } = require('pg');
-// const inquirer = require('inquirer');
-
-// // Create a new PostgreSQL client
-// const client = new Client({
-//   user: 'your_username',
-//   host: 'localhost',
-//   database: 'your_database',
-//   password: 'your_password',
-//   port: 5432,
-// });
-
-// // Connect to the database
-// client.connect();
-
-// Prompt the user for input using Inquirer
-inquirer.prompt([
-  {
-    type: 'input',
-    name: 'name',
-    message: 'Enter your name:',
-  },
-  {
-    type: 'input',
-    name: 'email',
-    message: 'Enter your email:',
-  },
-]).then((answers) => {
-  // Insert the collected data into the database
-  const query = 'INSERT INTO users (name, email) VALUES ($1, $2)';
-  const values = [answers.name, answers.email];
-
-  client.query(query, values, (err, res) => {
-    if (err) {
-      console.error(err);
-    } else {
-      console.log('Data inserted successfully!');
-    }
-
-    // Close the database connection
-    client.end();
-  });
-});
